@@ -2,8 +2,8 @@
 
 import argparse
 
-import qc_stats
-import io_csv
+import bee_tracker.qc_stats
+import bee_tracker.io_csv
 
 def parseArgs():
     parser = argparse.ArgumentParser(description='Compute basic QC stats for bee movie')
@@ -15,19 +15,26 @@ def parseArgs():
                         default='.',
                         metavar='DIR',
                         help='Output directory')
+    parser.add_argument('-p',
+                        '--profile',
+                        action='store_true',
+                        help='Output profiling information')
     args = parser.parse_args()
     return args
 
-def main():
-    args  = parseArgs()
-    bees  = io_csv.loadBeesCSV(args.input)
-    stats = [qc_stats.FramesPerBee,
-             qc_stats.FramesPerPath,
-             qc_stats.FramesBetweenPath,
-             qc_stats.BeesPerFrame,
-             qc_stats.PathsPerBee]
-    computeStats(stats, bees, args.outDir)
+def main(args):
+    bees  = bee_tracker.io_csv.loadBeesCSV(args.input)
+    stats = [bee_tracker.qc_stats.FramesPerBee,
+             bee_tracker.qc_stats.FramesPerPath,
+             bee_tracker.qc_stats.FramesBetweenPath,
+             bee_tracker.qc_stats.BeesPerFrame,
+             bee_tracker.qc_stats.PathsPerBee]
+    bee_tracker.qc_stats.computeStats(stats, bees, args.outDir)
 
 if __name__ == '__main__':
-    import cProfile
-    cProfile.run('main()')
+    args  = parseArgs()
+    if args.profile:
+        import cProfile
+        cProfile.run('main(args)')
+    else:
+        main(args)

@@ -4,7 +4,7 @@ import sys
 
 import pandas
 
-from bee import Bee
+import bee_tracker.bee
 
 
 def loadCSVLists(path):
@@ -80,7 +80,7 @@ def createBeesFromDataFrame(df, minSize=0):
     for beeId, subFrame in df.groupby('BeeID'):
         if len(subFrame) < minSize:
             continue
-        bee             = Bee(beeId)
+        bee             = bee_tracker.bee.Bee(beeId)
         bee.tags        = subFrame['Tag'].values
         bee.frames      = subFrame['Frame'].values
         bee.xs          = subFrame['X'].values

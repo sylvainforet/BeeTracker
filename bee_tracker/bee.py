@@ -26,13 +26,15 @@ class Bee:
         if self.pathStarts:
             self.pathStarts = []
         self.pathStarts.append(0)
-        # much faster to work on a list than a numpy ndarray
-        frames = list(self.frames)
+        # It is much faster to work on a list than a numpy ndarray
+        frames   = list(self.frames)
         previous = frames[0]
+        idx      = 0
         for frame in frames[1:]:
             if previous + 1 != frame:
-                self.pathStarts.append(frame)
+                self.pathStarts.append(idx)
             previous = frame
+            idx     += 1
 
     def mergePaths(self, maxDiff=10):
         '''Merges paths that are only separated by a few frames.
