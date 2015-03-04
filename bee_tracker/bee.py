@@ -51,7 +51,7 @@ class Bee:
         maxCount   = 0
         totalCount = 0
         maxTag     = Bee.UNKNOWN_TAG
-        for tag, count in tags:
+        for tag, count in tags.items():
             if tag != Bee.UNKNOWN_TAG:
                 totalCount += count
                 if count > maxCount:

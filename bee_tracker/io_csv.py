@@ -7,33 +7,6 @@ import pandas
 import bee_tracker.bee
 
 
-def loadCSVLists(path):
-    '''Loads the bee data from a CSV file as a set of vectors.
-    Returns the following vectors: ids, tags, frames, x coordinates and y
-    coordinates.
-    '''
-    beeIds = []
-    tags   = []
-    frames = []
-    xs     = []
-    ys     = []
-    with open(path) as handle:
-        metaData = handle.readline()
-        header = handle.readline()
-        for line in handle:
-            fields = line.split(',')
-            beeId  = int(fields[0])
-            tag    = int(fields[1])
-            frame  = int(fields[2])
-            x      = float(fields[3])
-            y      = float(fields[4])
-            beeIds.append(beeId)
-            tags.append(tag)
-            frames.append(frame)
-            xs.append(x)
-            ys.append(y)
-    return (beeIds, tags, frames, xs, ys)
-
 def loadCSVDataFrame(path):
     '''Loads the bee data from a CSV file as a set of vectors.
     Returns the following vectors: ids, tags, frames, x coordinates and y
@@ -49,26 +22,6 @@ def loadCSVDataFrame(path):
                             comment='#',
                             dtype=dtype)
     return df
-
-def createBeesFromList(beeIds, tags, frames, xs, ys):
-    '''Creates a dictionary of bee objects indexed by bee id based on vectors
-    of beeIds, tags, frames number, x and y coordinates.
-    '''
-    nRecords = len(beeIds)
-    bees     = {}
-    for i in range(nRecords):
-        beeId = beeIds[i]
-        if not beeId in bees:
-            newBee      = Bee(beeId)
-            bees[beeId] = newBee
-        bee = bees[beeId]
-        bee.tags.append(tags[i])
-        bee.frames.append(frames[i])
-        bee.xs.append(xs[i])
-        bee.ys.append(ys[i])
-    for beeId in bees:
-        bees[beeId].findPathStarts()
-    return bees
 
 def createBeesFromDataFrame(df, minSize=0):
     '''Creates a dictionary of bee objects indexed by bee id based on vectors
