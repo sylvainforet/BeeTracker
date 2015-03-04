@@ -18,7 +18,7 @@ class Bee:
         self.xs         = ()
         self.ys         = ()
         self.pathStarts = []
-        self.tagClass   = Bee.UNKNOWN_TAG
+        self.category   = Bee.UNKNOWN_TAG
 
     def findPathStarts(self):
         '''Find the starts of contiguous successive records
@@ -58,7 +58,7 @@ class Bee:
                     maxCount = count
                     maxTag   = tag
         if maxCount > minCount and maxCount / totalCount >= consistency:
-                self.tagClass = maxTag
+                self.category = maxTag
 
 def main():
     # TODO write some test

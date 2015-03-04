@@ -26,10 +26,10 @@ def main(args):
     bees  = bee_tracker.io_csv.loadBeesCSV(args.input)
     for bee in bees.values():
         bee.classify()
-    stats = [bee_tracker.qc_stats.FramesPerBee,
+    stats = [bee_tracker.qc_stats.BeesPerFrame,
+             bee_tracker.qc_stats.FramesPerBee,
              bee_tracker.qc_stats.FramesPerPath,
              bee_tracker.qc_stats.FramesBetweenPath,
-             bee_tracker.qc_stats.BeesPerFrame,
              bee_tracker.qc_stats.PathsPerBee]
     bee_tracker.qc_stats.computeStats(stats, bees, args.outDir)
 
