@@ -23,24 +23,22 @@ class Bee:
     def findPathStarts(self):
         '''Find the starts of contiguous successive records
         '''
-        if self.pathStarts:
-            self.pathStarts = []
-        self.pathStarts.append(0)
+        # Clear any existing list and sets the first frame as the start of the
+        # first path
+        self.pathStarts = [0]
         # It is much faster to work on a list than a numpy ndarray
-        frames   = list(self.frames)
-        previous = frames[0]
-        idx      = 0
-        for frame in frames[1:]:
-            if previous + 1 != frame:
-                self.pathStarts.append(idx)
-            previous = frame
-            idx     += 1
+        frames  = list(self.frames)
+        nFrames = len(frames)
+        for i in range(1, nFrames):
+            if frames[i - 1] + 1 != frames[i]:
+                self.pathStarts.append(i)
 
     def mergePaths(self, maxDiff=10):
         '''Merges paths that are only separated by a few frames.
         The coordinates of the missing point are linearly extrapolated.
         maxDiff: maximim number of missing frames between paths to be merged
         '''
+        pass
 
     def classify(self, minCount=100, consistency=0.7):
         '''Classifies the bee
