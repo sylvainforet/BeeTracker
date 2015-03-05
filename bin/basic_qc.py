@@ -30,7 +30,8 @@ def main(args):
              bee_tracker.qc_stats.FramesPerBee,
              bee_tracker.qc_stats.FramesPerPath,
              bee_tracker.qc_stats.FramesBetweenPath,
-             bee_tracker.qc_stats.PathsPerBee]
+             bee_tracker.qc_stats.PathsPerBee,
+             bee_tracker.qc_stats.Classification]
     bee_tracker.qc_stats.computeStats(stats, bees, args.outDir)
 
 if __name__ == '__main__':

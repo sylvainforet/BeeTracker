@@ -5,6 +5,9 @@ import os.path
 
 import pandas
 
+import bee_tracker.bee
+
+
 class QCStatistic:
 
     @staticmethod
@@ -146,6 +149,34 @@ class PathsPerBee(QCStatistic):
             df     = pandas.DataFrame(counts)
             dfs.append(df)
         self.result = pandas.concat(dfs)
+
+class Classification(QCStatistic):
+
+    @staticmethod
+    def getOutputFileName():
+        return 'classification.txt'
+
+    def __init__(self, bees):
+        QCStatistic.__init__(self, bees)
+
+    def compute(self):
+        # Deal with arbitrary number of categories
+        tags = {}
+        for bee in self.bees.values():
+            for tag in bee.tags:
+                if not tag in tags:
+                    tags[tag] = 1
+        classifications = {}
+        for tag in tags:
+            classifications[tag] = []
+        idx = 0
+        for bee in self.bees.values():
+            for tag in tags:
+                classifications[tag].append(0)
+            for tag in bee.tags:
+                classifications[tag][idx] += 1
+            idx += 1
+        self.result = pandas.DataFrame(classifications)
 
 def computeStats(stats, bees, outDir):
     for stat in stats:
