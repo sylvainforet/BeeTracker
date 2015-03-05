@@ -56,7 +56,6 @@ class FramesPerBee(QCStatistic):
 
     def __init__(self, bees):
         QCStatistic.__init__(self, bees)
-        self.result      = []
 
     def compute(self):
         frameCounts = collections.defaultdict(list)
@@ -81,7 +80,6 @@ class FramesPerPath(QCStatistic):
 
     def __init__(self, bees):
         QCStatistic.__init__(self, bees)
-        self.result      = []
 
     def compute(self):
         frameCounts = collections.defaultdict(list)
@@ -109,7 +107,6 @@ class FramesBetweenPath(QCStatistic):
 
     def __init__(self, bees):
         QCStatistic.__init__(self, bees)
-        self.result      = []
 
     def compute(self):
         frameCounts = collections.defaultdict(list)
@@ -135,7 +132,6 @@ class PathsPerBee(QCStatistic):
 
     def __init__(self, bees):
         QCStatistic.__init__(self, bees)
-        self.result      = []
 
     def compute(self):
         pathCounts = collections.defaultdict(list)
