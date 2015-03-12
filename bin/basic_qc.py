@@ -5,8 +5,11 @@ import multiprocessing
 import os.path
 import sys
 
-import bee_tracker.qc_stats
+import pandas
+
 import bee_tracker.io_csv
+import bee_tracker.qc_plot
+import bee_tracker.qc_stats
 
 
 class Worker:
@@ -56,7 +59,7 @@ def parseArgs():
     args = parser.parse_args()
     return args
 
-def main(args):
+def computeData(args):
     worker = Worker(args)
     if args.processes < 1:
         for path in args.input:
@@ -64,6 +67,17 @@ def main(args):
     else:
         pool = multiprocessing.Pool(processes=args.processes)
         pool.map(worker.work, args.input, chunksize=1)
+
+def makePlots(args):
+    basenames   = [os.path.basename(x) for x in args.input]
+    directories = [os.path.join(args.outDir, x) for x in basenames]
+    pandas.options.display.mpl_style = 'default'
+    plots       = bee_tracker.qc_plot.BeesPerFramePlots(directories, '.')
+    plots.makePlots()
+
+def main(args):
+    computeData(args)
+    makePlots(args)
 
 if __name__ == '__main__':
     args  = parseArgs()
