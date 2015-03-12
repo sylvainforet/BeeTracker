@@ -5,6 +5,8 @@ import multiprocessing
 import os.path
 import sys
 
+import matplotlib
+matplotlib.use('Agg')
 import pandas
 
 import bee_tracker.io_csv
@@ -60,7 +62,7 @@ def parseArgs():
                         '--noPlot',
                         action='store_true',
                         help='Do not plot, only compute the data')
-    parser.add_argument('-d',
+    parser.add_argument('-a',
                         '--noData',
                         action='store_true',
                         help='Dont compute the data, only plot')
