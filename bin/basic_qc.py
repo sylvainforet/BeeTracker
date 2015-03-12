@@ -56,6 +56,14 @@ def parseArgs():
                         '--profile',
                         action='store_true',
                         help='Output profiling information')
+    parser.add_argument('-l',
+                        '--noPlot',
+                        action='store_true',
+                        help='Do not plot, only compute the data')
+    parser.add_argument('-d',
+                        '--noData',
+                        action='store_true',
+                        help='Dont compute the data, only plot')
     args = parser.parse_args()
     return args
 
@@ -72,12 +80,14 @@ def makePlots(args):
     basenames   = [os.path.basename(x) for x in args.input]
     directories = [os.path.join(args.outDir, x) for x in basenames]
     pandas.options.display.mpl_style = 'default'
-    plots       = bee_tracker.qc_plot.BeesPerFramePlots(directories, '.')
+    plots       = bee_tracker.qc_plot.BeesPerFramePlots(directories, args.outDir)
     plots.makePlots()
 
 def main(args):
-    computeData(args)
-    makePlots(args)
+    if not args.noData:
+        computeData(args)
+    if not args.noPlot:
+        makePlots(args)
 
 if __name__ == '__main__':
     args  = parseArgs()
