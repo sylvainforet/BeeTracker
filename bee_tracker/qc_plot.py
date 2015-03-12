@@ -6,7 +6,6 @@ import sys
 
 import matplotlib.pyplot
 import pandas
-import statsmodels.graphics.boxplots
 
 import bee_tracker.qc_stats
 
@@ -102,10 +101,11 @@ class BeesPerFramePlots(QCPlots):
             out    = os.path.join(self.outDir, '%s.violinplot.%d.png' % (self.basename, cat))
             matplotlib.pyplot.figure()
             try:
-                plot_opts = {'label_rotation': 30}
-                statsmodels.graphics.boxplots.violinplot(data,
-                                                         labels=labels,
-                                                         plot_opts=plot_opts)
+                matplotlib.pyplot.violinplot(data,
+                                             showmeans=True,
+                                             showextrema=True,
+                                             showmedians=True,
+                                             bw_method=0.20)
             except:
                 sys.stderr.write('[Warning] Could not plot violin plot for category %d\n' % cat)
             matplotlib.pyplot.savefig(out)
