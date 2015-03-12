@@ -90,7 +90,10 @@ class BeesPerFramePlots(QCPlots):
             df  = pandas.concat(dfs[cat])
             out = os.path.join(self.outDir, '%s.boxplot.%d.png' % (self.basename, cat))
             matplotlib.pyplot.figure()
-            df.boxplot(by='source')
+            bp  = df.boxplot(by='source', rot=30)
+            bp.set_title('')
+            bp.set_xlabel('')
+            bp.get_figure().suptitle('')
             matplotlib.pyplot.savefig(out)
             matplotlib.pyplot.close()
 
@@ -99,9 +102,10 @@ class BeesPerFramePlots(QCPlots):
             out    = os.path.join(self.outDir, '%s.violinplot.%d.png' % (self.basename, cat))
             matplotlib.pyplot.figure()
             try:
+                plot_opts = {'label_rotation': 30}
                 statsmodels.graphics.boxplots.violinplot(data,
                                                          labels=labels,
-                                                         plot_opts={'label_rotation':30})
+                                                         plot_opts=plot_opts)
             except:
                 sys.stderr.write('[Warning] Could not plot violin plot for category %d\n' % cat)
             matplotlib.pyplot.savefig(out)
