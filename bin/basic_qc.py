@@ -79,7 +79,12 @@ def computeData(args):
         pool.map(worker.work, args.input, chunksize=1)
 
 def makePlots(args):
+
+    def dirKey(key):
+        return int(key.replace('.csv', ''))
+
     basenames   = [os.path.basename(x) for x in args.input]
+    basenames   = sorted(basenames, key=dirKey)
     directories = [os.path.join(args.outDir, x) for x in basenames]
     pandas.options.display.mpl_style = 'default'
     plots       = bee_tracker.qc_plot.BeesPerFramePlots(directories, args.outDir)

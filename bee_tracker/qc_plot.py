@@ -5,6 +5,7 @@ import os.path
 import sys
 
 import matplotlib.pyplot
+import numpy
 import pandas
 
 import bee_tracker.qc_stats
@@ -55,10 +56,11 @@ class BeesPerFramePlots(QCPlots):
             df   = pandas.read_csv(path)
             cats = df.category.unique()
             for cat in cats:
-                maxVal               = df.counts[df.category == cat].max()
+                maxVal               = numpy.percentile(df.counts[df.category == cat], 99)
                 maxVal               = max(maxVal, self.maxVals[cat])
                 self.maxVals[cat]    = maxVal
                 minVal               = df.counts[df.category == cat].min()
+                minVal               = numpy.percentile(df.counts[df.category == cat], 1)
                 minVal               = min(minVal, self.minVals[cat])
                 self.minVals[cat]    = minVal
                 self.categories[cat] = 1
@@ -86,26 +88,40 @@ class BeesPerFramePlots(QCPlots):
         if not os.path.exists(self.outDir):
             os.makedirs(outDir)
         for cat in self.categories:
-            df  = pandas.concat(dfs[cat])
-            out = os.path.join(self.outDir, '%s.boxplot.%d.png' % (self.basename, cat))
-            matplotlib.pyplot.figure()
-            bp  = df.boxplot(by='source', rot=30)
-            bp.set_title('')
-            bp.set_xlabel('')
-            bp.get_figure().suptitle('')
+            df     = pandas.concat(dfs[cat])
+            miny   = numpy.percentile(df.counts.values, 1)
+            maxy   = numpy.percentile(df.counts.values, 99)
+            gb     = df.groupby('source', sort=False)
+            data   = [x[1].counts.values for x in gb]
+            labels = [x[0].replace('.csv', '') for x in gb]
+
+            out    = os.path.join(self.outDir, '%s.boxplot.%d.png' % (self.basename, cat))
+            size   = (6, 4)
+            if len(self.directories) > 20:
+                size = (len(self.directories) * 0.4, 4)
+            fig    = matplotlib.pyplot.figure(figsize=size)
+            matplotlib.pyplot.boxplot(data)
+            matplotlib.pyplot.xticks(list(range(1, len(self.directories) + 1)),
+                                     labels, rotation='vertical')
+            matplotlib.pyplot.ylim(miny, maxy)
             matplotlib.pyplot.savefig(out)
             matplotlib.pyplot.close()
 
-            data   = [x[1].counts.values for x in df.groupby('source')]
-            labels = [x[0] for x in df.groupby('source')]
             out    = os.path.join(self.outDir, '%s.violinplot.%d.png' % (self.basename, cat))
-            matplotlib.pyplot.figure()
+            size   = (6, 4)
+            if len(self.directories) > 20:
+                size = (len(self.directories) * 0.4, 4)
+            fig    = matplotlib.pyplot.figure(figsize=size)
             try:
                 matplotlib.pyplot.violinplot(data,
-                                             showmeans=True,
-                                             showextrema=True,
+                                             showmeans=False,
+                                             showextrema=False,
                                              showmedians=True,
+                                             widths=0.9,
                                              bw_method=0.20)
+                matplotlib.pyplot.xticks(list(range(1, len(self.directories) + 1)),
+                                         labels, rotation='vertical')
+                matplotlib.pyplot.ylim(miny, maxy)
             except:
                 sys.stderr.write('[Warning] Could not plot violin plot for category %d\n' % cat)
             matplotlib.pyplot.savefig(out)
@@ -115,12 +131,12 @@ class BeesPerFramePlots(QCPlots):
         handle.write('<br/>')
         for cat in self.categories:
             handle.write('<h2>Category: %d<h2/>\n' % cat)
-            img = os.path.join(self.outDir, '%s.boxplot.%d.png' % (self.basename, cat))
+            img = '%s.boxplot.%d.png' % (self.basename, cat)
             handle.write('<img src="%s"/>\n' % img)
         handle.write('<br/>')
         for cat in self.categories:
             handle.write('<h2>Category: %d<h2/>\n' % cat)
-            img = os.path.join(self.outDir, '%s.violinplot.%d.png' % (self.basename, cat))
+            img = '%s.violinplot.%d.png' % (self.basename, cat)
             handle.write('<img src="%s"/>\n' % img)
         handle.write('<br/>')
 
