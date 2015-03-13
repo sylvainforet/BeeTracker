@@ -48,6 +48,10 @@ class BeesPerFramePlots(QCPlots):
         self.htmlPath   = os.path.join(self.outDir, 'bees_per_frame.html')
 
     def prepare(self):
+        '''Compute the ranges of plots for each category accross all recordings.
+        Lists all categories
+        '''
+        # Ranges
         self.maxVals    = collections.defaultdict(int)
         self.minVals    = collections.defaultdict(int)
         self.categories = {}
@@ -64,6 +68,7 @@ class BeesPerFramePlots(QCPlots):
                 minVal               = min(minVal, self.minVals[cat])
                 self.minVals[cat]    = minVal
                 self.categories[cat] = 1
+        # Categories
         self.categories = list(self.categories)
         self.categories.sort()
 
@@ -72,6 +77,11 @@ class BeesPerFramePlots(QCPlots):
         handle.write('<h1>Bees per Frame</h1>\n<br/>\n')
 
     def makeBoxPlots(self):
+        '''Makes box plots and violin plots reflexing the distribution of the
+        data for each recording.
+        The box plots represent the whole range, while the violin plots are
+        restricted to the 1-99 percentiles.
+        '''
         dfs = {}
         for cat in self.categories:
             dfs[cat] = []
@@ -103,7 +113,7 @@ class BeesPerFramePlots(QCPlots):
             matplotlib.pyplot.boxplot(data)
             matplotlib.pyplot.xticks(list(range(1, len(self.directories) + 1)),
                                      labels, rotation='vertical')
-            matplotlib.pyplot.ylim(miny, maxy)
+            #matplotlib.pyplot.ylim(miny, maxy)
             matplotlib.pyplot.savefig(out)
             matplotlib.pyplot.close()
 
@@ -128,6 +138,8 @@ class BeesPerFramePlots(QCPlots):
             matplotlib.pyplot.close()
 
     def makeBoxPlotsHTML(self, handle):
+        '''Very basic HTML code around the box plots / violinplots
+        '''
         handle.write('<br/>')
         for cat in self.categories:
             handle.write('<h2>Category: %d<h2/>\n' % cat)
@@ -141,6 +153,8 @@ class BeesPerFramePlots(QCPlots):
         handle.write('<br/>')
 
     def makeHistograms(self):
+        '''Makes individual histograms for each category and each recording.
+        '''
         for directory in self.directories:
             path    = os.path.join(directory, self.basename)
             df      = pandas.read_csv(path)
@@ -157,6 +171,8 @@ class BeesPerFramePlots(QCPlots):
                 matplotlib.pyplot.close()
 
     def makeHistogramsHTML(self, handle):
+        '''HTML code for the table with the individual histograms
+        '''
         handle.write('<table>\n')
 
         handle.write('<tr>\n')
@@ -187,6 +203,8 @@ class BeesPerFramePlots(QCPlots):
         handle.write('</table>\n')
 
     def makePlots(self):
+        '''Makes all the plots of the number of bees per frame
+        '''
         with open(self.htmlPath, "w") as handle:
             self.prepare()
             self.writeHTMLHeader(handle)
