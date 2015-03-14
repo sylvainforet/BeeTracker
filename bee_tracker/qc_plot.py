@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import collections
+import math
 import os.path
 import sys
 
@@ -124,7 +125,12 @@ class CountsPerCategoryPlots(QCPlots):
                 size = (len(self.directories) * 0.4, 4)
             matplotlib.pyplot.figure(figsize=size)
             try:
-                matplotlib.pyplot.violinplot(self.data[cat].data,
+                ##### WARNING This is a hack because the violin plot does seem
+                ##### to work on the log scale when the scale is set with  yscale.
+                data = self.data[cat].data
+                if self.logScale:
+                    data = [numpy.log10(x) for x in self.data[cat].data]
+                matplotlib.pyplot.violinplot(data,
                                              showmeans=False,
                                              showextrema=False,
                                              showmedians=True,
@@ -133,12 +139,11 @@ class CountsPerCategoryPlots(QCPlots):
                 matplotlib.pyplot.xticks(list(range(1, len(self.data[cat].labels) + 1)),
                                          self.data[cat].labels,
                                          rotation='vertical')
-                matplotlib.pyplot.ylim(self.minVals[cat],
-                                       self.maxVals[cat])
-                if self.logScale:
-                    matplotlib.pyplot.yscale('log')
-            except:
-                sys.stderr.write('[Warning] Failed to plot violin plot for category %d\n' % cat)
+                if not self.logScale:
+                    matplotlib.pyplot.ylim(self.minVals[cat],
+                                           self.maxVals[cat])
+            except Exception as e:
+                sys.stderr.write('[Warning] Failed to plot violin plot for category %d: %s\n' % (cat, str(e)))
             matplotlib.pyplot.savefig(out)
             matplotlib.pyplot.close()
 
