@@ -87,7 +87,10 @@ def makePlots(args):
     basenames   = sorted(basenames, key=dirKey)
     directories = [os.path.join(args.outDir, x) for x in basenames]
     pandas.options.display.mpl_style = 'default'
-    plots       = bee_tracker.qc_plot.BeesPerFramePlots(directories, args.outDir)
+    plots       = bee_tracker.qc_plot.CountsPerCategoryPlots(directories,
+                                                             args.outDir,
+                                                             'bees_per_frame',
+                                                             logScale=True)
     plots.makePlots()
 
 def main(args):

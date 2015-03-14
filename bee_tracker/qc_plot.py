@@ -39,24 +39,25 @@ class QCPlots:
         </html>\n'''
         handle.write(footer)
 
-class BeesPerFramePlots(QCPlots):
+class CountsPerCategoryPlots(QCPlots):
 
-    def __init__(self, directories, outDir):
+    def __init__(self, directories, outDir, name, logScale=False):
         QCPlots.__init__(self, directories, outDir)
-        self.title      = 'Bees Per Frame'
-        self.basename   = bee_tracker.qc_stats.BeesPerFrame.getOutputFileName()
-        self.htmlPath   = os.path.join(self.outDir, 'bees_per_frame.html')
+        self.title    = 'Bees Per Frame'
+        self.name     = name
+        self.logScale = logScale
+        self.htmlPath = os.path.join(self.outDir, self.name + '.html')
 
     def prepare(self):
-        '''Compute the ranges of plots for each category accross all recordings.
-        Lists all categories
+        '''Compute the ranges of plots for each category accross all recordings
+        and lists all the categories.
         '''
         # Ranges
         self.maxVals    = collections.defaultdict(int)
         self.minVals    = collections.defaultdict(int)
         self.categories = {}
         for directory in self.directories:
-            path = os.path.join(directory, self.basename)
+            path = os.path.join(directory, self.name + '.txt')
             df   = pandas.read_csv(path)
             cats = df.category.unique()
             for cat in cats:
@@ -86,7 +87,7 @@ class BeesPerFramePlots(QCPlots):
         for cat in self.categories:
             dfs[cat] = []
         for directory in self.directories:
-            path    = os.path.join(directory, self.basename)
+            path    = os.path.join(directory, self.name + '.txt')
             df      = pandas.read_csv(path)
             cats    = df.category.unique()
             baseDir = os.path.basename(directory)
@@ -105,19 +106,20 @@ class BeesPerFramePlots(QCPlots):
             data   = [x[1].counts.values for x in gb]
             labels = [x[0].replace('.csv', '') for x in gb]
 
-            out    = os.path.join(self.outDir, '%s.boxplot.%d.png' % (self.basename, cat))
+            out    = os.path.join(self.outDir, '%s.boxplot.%d.png' % (self.name, cat))
             size   = (6, 4)
             if len(self.directories) > 20:
                 size = (len(self.directories) * 0.4, 4)
             fig    = matplotlib.pyplot.figure(figsize=size)
             matplotlib.pyplot.boxplot(data)
+            if self.logScale:
+                matplotlib.pyplot.yscale('log')
             matplotlib.pyplot.xticks(list(range(1, len(self.directories) + 1)),
                                      labels, rotation='vertical')
-            #matplotlib.pyplot.ylim(miny, maxy)
             matplotlib.pyplot.savefig(out)
             matplotlib.pyplot.close()
 
-            out    = os.path.join(self.outDir, '%s.violinplot.%d.png' % (self.basename, cat))
+            out    = os.path.join(self.outDir, '%s.violinplot.%d.png' % (self.name, cat))
             size   = (6, 4)
             if len(self.directories) > 20:
                 size = (len(self.directories) * 0.4, 4)
@@ -132,6 +134,8 @@ class BeesPerFramePlots(QCPlots):
                 matplotlib.pyplot.xticks(list(range(1, len(self.directories) + 1)),
                                          labels, rotation='vertical')
                 matplotlib.pyplot.ylim(miny, maxy)
+                if self.logScale:
+                    matplotlib.pyplot.yscale('log')
             except:
                 sys.stderr.write('[Warning] Could not plot violin plot for category %d\n' % cat)
             matplotlib.pyplot.savefig(out)
@@ -143,12 +147,12 @@ class BeesPerFramePlots(QCPlots):
         handle.write('<br/>')
         for cat in self.categories:
             handle.write('<h2>Category: %d<h2/>\n' % cat)
-            img = '%s.boxplot.%d.png' % (self.basename, cat)
+            img = '%s.boxplot.%d.png' % (self.name, cat)
             handle.write('<img src="%s"/>\n' % img)
         handle.write('<br/>')
         for cat in self.categories:
             handle.write('<h2>Category: %d<h2/>\n' % cat)
-            img = '%s.violinplot.%d.png' % (self.basename, cat)
+            img = '%s.violinplot.%d.png' % (self.name, cat)
             handle.write('<img src="%s"/>\n' % img)
         handle.write('<br/>')
 
@@ -156,7 +160,7 @@ class BeesPerFramePlots(QCPlots):
         '''Makes individual histograms for each category and each recording.
         '''
         for directory in self.directories:
-            path    = os.path.join(directory, self.basename)
+            path    = os.path.join(directory, self.name + '.txt')
             df      = pandas.read_csv(path)
             cats    = df.category.unique()
             baseDir = os.path.basename(directory)
@@ -165,8 +169,10 @@ class BeesPerFramePlots(QCPlots):
                 os.makedirs(subDir)
             for cat, catDf in df.groupby('category'):
                 matplotlib.pyplot.figure()
-                catDf.counts.hist(bins=20, range=(self.minVals[cat], self.maxVals[cat]))
-                out = os.path.join(subDir, '%s.hists.%d.png' % (self.basename, cat))
+                catDf.counts.hist(bins=20,
+                                  range=(self.minVals[cat], self.maxVals[cat]),
+                                  log=self.logScale)
+                out = os.path.join(subDir, '%s.hists.%d.png' % (self.name, cat))
                 matplotlib.pyplot.savefig(out)
                 matplotlib.pyplot.close()
 
@@ -193,9 +199,9 @@ class BeesPerFramePlots(QCPlots):
             baseDir = os.path.basename(directory)
             subDir  = os.path.join(self.outDir, baseDir)
             for cat in self.categories:
-                relPath = os.path.join(subDir, '%s.hists.%d.png' % (self.basename, cat))
+                relPath = os.path.join(subDir, '%s.hists.%d.png' % (self.name, cat))
                 if os.path.exists(relPath):
-                    img = os.path.join(baseDir, '%s.hists.%d.png' % (self.basename, cat))
+                    img = os.path.join(baseDir, '%s.hists.%d.png' % (self.name, cat))
                     handle.write('    <td><img src="%s" class="tableImg"/></td>\n' % img)
                 else:
                     handle.write('    <td>no data</td>\n')
