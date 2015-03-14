@@ -9,14 +9,18 @@ import bee_tracker.bee
 
 
 class QCStatistic:
-
-    @staticmethod
-    def getOutputFileName():
-        raise Exception('Not implemented')
+    '''Parent class for all the classes that extract QC statistics
+    '''
 
     def __init__(self, bees):
-        self.bees   = bees
-        self.result = None
+        self.bees        = bees
+        self.result      = None
+        self.name        = 'qc_statistic'
+        self.description = 'QC'
+        self.extension   = '.txt'
+
+    def getOutputFileName(self):
+        return self.name + self.extension
 
     def compute(self):
         raise Exception('Not implemented')
@@ -28,12 +32,11 @@ class QCStatistic:
 
 class BeesPerFrame(QCStatistic):
 
-    @staticmethod
-    def getOutputFileName():
-        return 'bees_per_frame.txt'
 
     def __init__(self, bees):
         QCStatistic.__init__(self, bees)
+        self.name        = 'bees_per_frame'
+        self.description = 'Number of bees per frame'
 
     def compute(self):
         beeCounts = {}
@@ -53,12 +56,10 @@ class BeesPerFrame(QCStatistic):
 
 class FramesPerBee(QCStatistic):
 
-    @staticmethod
-    def getOutputFileName():
-        return 'frames_per_bee.txt'
-
     def __init__(self, bees):
         QCStatistic.__init__(self, bees)
+        self.name        = 'frames_per_bee'
+        self.description = 'Number of frames per bee'
 
     def compute(self):
         frameCounts = collections.defaultdict(list)
@@ -77,12 +78,10 @@ class FramesPerBee(QCStatistic):
 
 class FramesPerPath(QCStatistic):
 
-    @staticmethod
-    def getOutputFileName():
-        return 'frames_per_path.txt'
-
     def __init__(self, bees):
         QCStatistic.__init__(self, bees)
+        self.name        = 'frames_per_path'
+        self.description = 'Number of frames per path'
 
     def compute(self):
         frameCounts = collections.defaultdict(list)
@@ -102,14 +101,12 @@ class FramesPerPath(QCStatistic):
             dfs.append(df)
         self.result = pandas.concat(dfs)
 
-class FramesBetweenPath(QCStatistic):
-
-    @staticmethod
-    def getOutputFileName():
-        return 'frames_between_paths.txt'
+class FramesBetweenPaths(QCStatistic):
 
     def __init__(self, bees):
         QCStatistic.__init__(self, bees)
+        self.name        = 'frames_between_path'
+        self.description = 'Number of frames between paths'
 
     def compute(self):
         frameCounts = collections.defaultdict(list)
@@ -129,12 +126,10 @@ class FramesBetweenPath(QCStatistic):
 
 class PathsPerBee(QCStatistic):
 
-    @staticmethod
-    def getOutputFileName():
-        return 'paths_per_bee.txt'
-
     def __init__(self, bees):
         QCStatistic.__init__(self, bees)
+        self.name        = 'paths_per_bee'
+        self.description = 'Number of paths per bee'
 
     def compute(self):
         pathCounts = collections.defaultdict(list)
@@ -152,12 +147,10 @@ class PathsPerBee(QCStatistic):
 
 class Classification(QCStatistic):
 
-    @staticmethod
-    def getOutputFileName():
-        return 'classification.txt'
-
     def __init__(self, bees):
         QCStatistic.__init__(self, bees)
+        self.name        = 'classification'
+        self.description = 'Tag classification'
 
     def compute(self):
         # Deal with arbitrary number of categories

@@ -12,11 +12,15 @@ import bee_tracker.qc_stats
 
 
 class QCPlots:
+    '''The parent class for all the classes that plot QC statistics
+    '''
 
-    def __init__(self, directories, outDir):
+    def __init__(self, qcStatistic, directories, outDir):
+        self.qcStatistic = qcStatistic
         self.directories = directories
         self.outDir      = outDir
-        self.title       = 'QCPlots'
+        self.htmlPath    = os.path.join(self.outDir,
+                                        self.qcStatistic.name + '.html')
 
     def makePlots(self):
         raise Exception('Not implemented')
@@ -31,8 +35,9 @@ class QCPlots:
                 .tableImg {max-width: 100%%;}
             </style>
         </head>
-        <body>\n''' % self.title
+        <body>\n''' % self.qcStatistic.description
         handle.write(header)
+        handle.write('<h1>%s</h1>\n<br/>\n' % self.qcStatistic.description)
 
     def writeHTMLFooter(self, handle):
         footer = '''</body>
@@ -40,13 +45,12 @@ class QCPlots:
         handle.write(footer)
 
 class CountsPerCategoryPlots(QCPlots):
+    '''Class that can be used to plot any data made of counts per category
+    '''
 
-    def __init__(self, directories, outDir, name, logScale=False):
-        QCPlots.__init__(self, directories, outDir)
-        self.title    = 'Bees Per Frame'
-        self.name     = name
+    def __init__(self, qcStatistic, directories, outDir, logScale=False):
+        QCPlots.__init__(self, qcStatistic, directories, outDir)
         self.logScale = logScale
-        self.htmlPath = os.path.join(self.outDir, self.name + '.html')
 
     def prepare(self):
         '''Compute the ranges of plots for each category accross all recordings
@@ -57,7 +61,7 @@ class CountsPerCategoryPlots(QCPlots):
         self.minVals    = collections.defaultdict(int)
         self.categories = {}
         for directory in self.directories:
-            path = os.path.join(directory, self.name + '.txt')
+            path = os.path.join(directory, self.qcStatistic.getOutputFileName())
             df   = pandas.read_csv(path)
             cats = df.category.unique()
             for cat in cats:
@@ -73,21 +77,18 @@ class CountsPerCategoryPlots(QCPlots):
         self.categories = list(self.categories)
         self.categories.sort()
 
-    def writeHTMLHeader(self, handle):
-        QCPlots.writeHTMLHeader(self, handle)
-        handle.write('<h1>Bees per Frame</h1>\n<br/>\n')
-
     def makeBoxPlots(self):
         '''Makes box plots and violin plots reflexing the distribution of the
         data for each recording.
         The box plots represent the whole range, while the violin plots are
         restricted to the 1-99 percentiles.
         '''
+        # Per category data frames
         dfs = {}
         for cat in self.categories:
             dfs[cat] = []
         for directory in self.directories:
-            path    = os.path.join(directory, self.name + '.txt')
+            path    = os.path.join(directory, self.qcStatistic.getOutputFileName())
             df      = pandas.read_csv(path)
             cats    = df.category.unique()
             baseDir = os.path.basename(directory)
@@ -96,6 +97,7 @@ class CountsPerCategoryPlots(QCPlots):
                            'counts': catDf.counts}
                 newDf   = pandas.DataFrame(newDict)
                 dfs[cat].append(newDf)
+        # Create the output directory if it does not exist
         if not os.path.exists(self.outDir):
             os.makedirs(outDir)
         for cat in self.categories:
@@ -106,7 +108,8 @@ class CountsPerCategoryPlots(QCPlots):
             data   = [x[1].counts.values for x in gb]
             labels = [x[0].replace('.csv', '') for x in gb]
 
-            out    = os.path.join(self.outDir, '%s.boxplot.%d.png' % (self.name, cat))
+            out    = os.path.join(self.outDir,
+                                  '%s.boxplot.%d.png' % (self.qcStatistic.name, cat))
             size   = (6, 4)
             if len(self.directories) > 20:
                 size = (len(self.directories) * 0.4, 4)
@@ -119,7 +122,8 @@ class CountsPerCategoryPlots(QCPlots):
             matplotlib.pyplot.savefig(out)
             matplotlib.pyplot.close()
 
-            out    = os.path.join(self.outDir, '%s.violinplot.%d.png' % (self.name, cat))
+            out    = os.path.join(self.outDir,
+                                  '%s.violinplot.%d.png' % (self.qcStatistic.name, cat))
             size   = (6, 4)
             if len(self.directories) > 20:
                 size = (len(self.directories) * 0.4, 4)
@@ -147,12 +151,12 @@ class CountsPerCategoryPlots(QCPlots):
         handle.write('<br/>')
         for cat in self.categories:
             handle.write('<h2>Category: %d<h2/>\n' % cat)
-            img = '%s.boxplot.%d.png' % (self.name, cat)
+            img = '%s.boxplot.%d.png' % (self.qcStatistic.name, cat)
             handle.write('<img src="%s"/>\n' % img)
         handle.write('<br/>')
         for cat in self.categories:
             handle.write('<h2>Category: %d<h2/>\n' % cat)
-            img = '%s.violinplot.%d.png' % (self.name, cat)
+            img = '%s.violinplot.%d.png' % (self.qcStatistic.name, cat)
             handle.write('<img src="%s"/>\n' % img)
         handle.write('<br/>')
 
@@ -160,7 +164,7 @@ class CountsPerCategoryPlots(QCPlots):
         '''Makes individual histograms for each category and each recording.
         '''
         for directory in self.directories:
-            path    = os.path.join(directory, self.name + '.txt')
+            path    = os.path.join(directory, self.qcStatistic.getOutputFileName())
             df      = pandas.read_csv(path)
             cats    = df.category.unique()
             baseDir = os.path.basename(directory)
@@ -169,10 +173,11 @@ class CountsPerCategoryPlots(QCPlots):
                 os.makedirs(subDir)
             for cat, catDf in df.groupby('category'):
                 matplotlib.pyplot.figure()
-                catDf.counts.hist(bins=20,
-                                  range=(self.minVals[cat], self.maxVals[cat]),
-                                  log=self.logScale)
-                out = os.path.join(subDir, '%s.hists.%d.png' % (self.name, cat))
+                matplotlib.pyplot.hist(catDf.counts.values,
+                                       bins=20,
+                                       range=(self.minVals[cat], self.maxVals[cat]),
+                                       log=self.logScale)
+                out = os.path.join(subDir, '%s.hists.%d.png' % (self.qcStatistic.name, cat))
                 matplotlib.pyplot.savefig(out)
                 matplotlib.pyplot.close()
 
@@ -199,9 +204,11 @@ class CountsPerCategoryPlots(QCPlots):
             baseDir = os.path.basename(directory)
             subDir  = os.path.join(self.outDir, baseDir)
             for cat in self.categories:
-                relPath = os.path.join(subDir, '%s.hists.%d.png' % (self.name, cat))
+                relPath = os.path.join(subDir,
+                                       '%s.hists.%d.png' % (self.qcStatistic.name, cat))
                 if os.path.exists(relPath):
-                    img = os.path.join(baseDir, '%s.hists.%d.png' % (self.name, cat))
+                    img = os.path.join(baseDir,
+                                       '%s.hists.%d.png' % (self.qcStatistic.name, cat))
                     handle.write('    <td><img src="%s" class="tableImg"/></td>\n' % img)
                 else:
                     handle.write('    <td>no data</td>\n')
@@ -209,7 +216,7 @@ class CountsPerCategoryPlots(QCPlots):
         handle.write('</table>\n')
 
     def makePlots(self):
-        '''Makes all the plots of the number of bees per frame
+        '''Makes all the plots and the associated HTML
         '''
         with open(self.htmlPath, "w") as handle:
             self.prepare()
