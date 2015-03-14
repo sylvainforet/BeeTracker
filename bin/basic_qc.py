@@ -23,7 +23,7 @@ class Worker:
         stats  = [bee_tracker.qc_stats.BeesPerFrame,
                   bee_tracker.qc_stats.FramesPerBee,
                   bee_tracker.qc_stats.FramesPerPath,
-                  bee_tracker.qc_stats.FramesBetweenPath,
+                  bee_tracker.qc_stats.FramesBetweenPaths,
                   bee_tracker.qc_stats.PathsPerBee,
                   bee_tracker.qc_stats.Classification]
         name   = os.path.basename(path)

@@ -44,6 +44,13 @@ class QCPlots:
         </html>\n'''
         handle.write(footer)
 
+class DataWithLabels:
+
+    def __init__(self):
+        self.data   = []
+        self.labels = []
+        self.dirs   = []
+
 class CountsPerCategoryPlots(QCPlots):
     '''Class that can be used to plot any data made of counts per category
     '''
@@ -56,103 +63,98 @@ class CountsPerCategoryPlots(QCPlots):
         '''Compute the ranges of plots for each category accross all recordings
         and lists all the categories.
         '''
-        # Ranges
-        self.maxVals    = collections.defaultdict(int)
-        self.minVals    = collections.defaultdict(int)
-        self.categories = {}
+        # Load data and compute ranges
+        self.maxVals = collections.defaultdict(int)
+        self.minVals = collections.defaultdict(int)
+        self.data    = collections.defaultdict(DataWithLabels)
+        categories   = {}
         for directory in self.directories:
-            path = os.path.join(directory, self.qcStatistic.getOutputFileName())
-            df   = pandas.read_csv(path)
-            cats = df.category.unique()
-            for cat in cats:
-                maxVal               = numpy.percentile(df.counts[df.category == cat], 99)
-                maxVal               = max(maxVal, self.maxVals[cat])
-                self.maxVals[cat]    = maxVal
-                minVal               = df.counts[df.category == cat].min()
-                minVal               = numpy.percentile(df.counts[df.category == cat], 1)
-                minVal               = min(minVal, self.minVals[cat])
-                self.minVals[cat]    = minVal
-                self.categories[cat] = 1
+            path   = os.path.join(directory, self.qcStatistic.getOutputFileName())
+            df     = pandas.read_csv(path)
+            folder = os.path.basename(directory)
+            label  = folder.replace('.csv', '')
+            for cat, catDf in df.groupby('category'):
+                data                  = catDf.counts.values
+                self.data[cat].data.append(data)
+                self.data[cat].labels.append(label)
+                self.data[cat].dirs.append(folder)
+                maxVal                = numpy.percentile(data, 99)
+                maxVal                = max(maxVal, self.maxVals[cat])
+                self.maxVals[cat]     = maxVal
+                minVal                = numpy.percentile(data, 1)
+                minVal                = min(minVal, self.minVals[cat])
+                self.minVals[cat]     = minVal
+                categories[cat]       = 1
         # Categories
-        self.categories = list(self.categories)
+        self.categories = list(categories.keys())
         self.categories.sort()
 
     def makeBoxPlots(self):
-        '''Makes box plots and violin plots reflexing the distribution of the
-        data for each recording.
-        The box plots represent the whole range, while the violin plots are
-        restricted to the 1-99 percentiles.
+        '''Makes box plots plots showing the distribution of the data for each
+        recording.
+        The full range of the data is shown
         '''
-        # Per category data frames
-        dfs = {}
         for cat in self.categories:
-            dfs[cat] = []
-        for directory in self.directories:
-            path    = os.path.join(directory, self.qcStatistic.getOutputFileName())
-            df      = pandas.read_csv(path)
-            cats    = df.category.unique()
-            baseDir = os.path.basename(directory)
-            for cat, catDf in df.groupby('category'):
-                newDict = {'source': baseDir,
-                           'counts': catDf.counts}
-                newDf   = pandas.DataFrame(newDict)
-                dfs[cat].append(newDf)
-        # Create the output directory if it does not exist
-        if not os.path.exists(self.outDir):
-            os.makedirs(outDir)
-        for cat in self.categories:
-            df     = pandas.concat(dfs[cat])
-            miny   = numpy.percentile(df.counts.values, 1)
-            maxy   = numpy.percentile(df.counts.values, 99)
-            gb     = df.groupby('source', sort=False)
-            data   = [x[1].counts.values for x in gb]
-            labels = [x[0].replace('.csv', '') for x in gb]
-
-            out    = os.path.join(self.outDir,
-                                  '%s.boxplot.%d.png' % (self.qcStatistic.name, cat))
+            # Box plots
+            img    = '%s.boxplot.%d.png' % (self.qcStatistic.name, cat)
+            out    = os.path.join(self.outDir, img)
             size   = (6, 4)
             if len(self.directories) > 20:
                 size = (len(self.directories) * 0.4, 4)
-            fig    = matplotlib.pyplot.figure(figsize=size)
-            matplotlib.pyplot.boxplot(data)
+            matplotlib.pyplot.figure(figsize=size)
+            matplotlib.pyplot.boxplot(self.data[cat].data)
             if self.logScale:
                 matplotlib.pyplot.yscale('log')
-            matplotlib.pyplot.xticks(list(range(1, len(self.directories) + 1)),
-                                     labels, rotation='vertical')
+            matplotlib.pyplot.xticks(list(range(1, len(self.data[cat].labels) + 1)),
+                                     self.data[cat].labels,
+                                     rotation='vertical')
             matplotlib.pyplot.savefig(out)
             matplotlib.pyplot.close()
 
-            out    = os.path.join(self.outDir,
-                                  '%s.violinplot.%d.png' % (self.qcStatistic.name, cat))
-            size   = (6, 4)
+    def makeViolinPlots(self):
+        '''Makes violin plots plots showing the distribution of the data for
+        each recording.
+        Only the 1-99 percentile range is shown.
+        '''
+        for cat in self.categories:
+            img  = '%s.violinplot.%d.png' % (self.qcStatistic.name, cat)
+            out  = os.path.join(self.outDir, img)
+            size = (6, 4)
             if len(self.directories) > 20:
                 size = (len(self.directories) * 0.4, 4)
-            fig    = matplotlib.pyplot.figure(figsize=size)
+            matplotlib.pyplot.figure(figsize=size)
             try:
-                matplotlib.pyplot.violinplot(data,
+                matplotlib.pyplot.violinplot(self.data[cat].data,
                                              showmeans=False,
                                              showextrema=False,
                                              showmedians=True,
                                              widths=0.9,
                                              bw_method=0.20)
-                matplotlib.pyplot.xticks(list(range(1, len(self.directories) + 1)),
-                                         labels, rotation='vertical')
-                matplotlib.pyplot.ylim(miny, maxy)
+                matplotlib.pyplot.xticks(list(range(1, len(self.data[cat].labels) + 1)),
+                                         self.data[cat].labels,
+                                         rotation='vertical')
+                matplotlib.pyplot.ylim(self.minVals[cat],
+                                       self.maxVals[cat])
                 if self.logScale:
                     matplotlib.pyplot.yscale('log')
             except:
-                sys.stderr.write('[Warning] Could not plot violin plot for category %d\n' % cat)
+                sys.stderr.write('[Warning] Failed to plot violin plot for category %d\n' % cat)
             matplotlib.pyplot.savefig(out)
             matplotlib.pyplot.close()
 
     def makeBoxPlotsHTML(self, handle):
-        '''Very basic HTML code around the box plots / violinplots
+        '''Very basic HTML code around the box plots
         '''
         handle.write('<br/>')
         for cat in self.categories:
             handle.write('<h2>Category: %d<h2/>\n' % cat)
             img = '%s.boxplot.%d.png' % (self.qcStatistic.name, cat)
             handle.write('<img src="%s"/>\n' % img)
+        handle.write('<br/>')
+
+    def makeViolinPlotsHTML(self, handle):
+        '''Very basic HTML code around the violin plots
+        '''
         handle.write('<br/>')
         for cat in self.categories:
             handle.write('<h2>Category: %d<h2/>\n' % cat)
@@ -163,21 +165,19 @@ class CountsPerCategoryPlots(QCPlots):
     def makeHistograms(self):
         '''Makes individual histograms for each category and each recording.
         '''
-        for directory in self.directories:
-            path    = os.path.join(directory, self.qcStatistic.getOutputFileName())
-            df      = pandas.read_csv(path)
-            cats    = df.category.unique()
-            baseDir = os.path.basename(directory)
-            subDir  = os.path.join(self.outDir, baseDir)
-            if not os.path.exists(subDir):
-                os.makedirs(subDir)
-            for cat, catDf in df.groupby('category'):
+        for cat in self.categories:
+            minx = self.minVals[cat]
+            maxx = self.maxVals[cat]
+            for i in range(len(self.data[cat].data)):
+                data   = self.data[cat].data[i]
+                folder = self.data[cat].dirs[i]
                 matplotlib.pyplot.figure()
-                matplotlib.pyplot.hist(catDf.counts.values,
+                matplotlib.pyplot.hist(data,
                                        bins=20,
-                                       range=(self.minVals[cat], self.maxVals[cat]),
+                                       range=(minx, maxx),
                                        log=self.logScale)
-                out = os.path.join(subDir, '%s.hists.%d.png' % (self.qcStatistic.name, cat))
+                img = '%s.hists.%d.png' % (self.qcStatistic.name, cat)
+                out = os.path.join(self.outDir, folder, img)
                 matplotlib.pyplot.savefig(out)
                 matplotlib.pyplot.close()
 
@@ -204,12 +204,11 @@ class CountsPerCategoryPlots(QCPlots):
             baseDir = os.path.basename(directory)
             subDir  = os.path.join(self.outDir, baseDir)
             for cat in self.categories:
-                relPath = os.path.join(subDir,
-                                       '%s.hists.%d.png' % (self.qcStatistic.name, cat))
-                if os.path.exists(relPath):
-                    img = os.path.join(baseDir,
-                                       '%s.hists.%d.png' % (self.qcStatistic.name, cat))
-                    handle.write('    <td><img src="%s" class="tableImg"/></td>\n' % img)
+                img  = '%s.hists.%d.png' % (self.qcStatistic.name, cat)
+                path = os.path.join(subDir, img)
+                if os.path.exists(path):
+                    relPath = os.path.join(baseDir, img)
+                    handle.write('    <td><img src="%s" class="tableImg"/></td>\n' % relPath)
                 else:
                     handle.write('    <td>no data</td>\n')
             handle.write('  </tr>\n')
@@ -218,11 +217,16 @@ class CountsPerCategoryPlots(QCPlots):
     def makePlots(self):
         '''Makes all the plots and the associated HTML
         '''
+        # Create the output directory if it does not exist
+        if not os.path.exists(self.outDir):
+            os.makedirs(outDir)
         with open(self.htmlPath, "w") as handle:
             self.prepare()
             self.writeHTMLHeader(handle)
             self.makeBoxPlots()
             self.makeBoxPlotsHTML(handle)
+            self.makeViolinPlots()
+            self.makeViolinPlotsHTML(handle)
             self.makeHistograms()
             self.makeHistogramsHTML(handle)
             self.writeHTMLFooter(handle)
