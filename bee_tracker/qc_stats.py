@@ -12,15 +12,17 @@ class QCStatistic:
     '''Parent class for all the classes that extract QC statistics
     '''
 
+    name        = 'qc_statistic'
+    description = 'QC'
+    extension   = '.txt'
+
     def __init__(self, bees):
         self.bees        = bees
         self.result      = None
-        self.name        = 'qc_statistic'
-        self.description = 'QC'
-        self.extension   = '.txt'
 
-    def getOutputFileName(self):
-        return self.name + self.extension
+    @classmethod
+    def getOutputFileName(cls):
+        return cls.name + cls.extension
 
     def compute(self):
         raise Exception('Not implemented')
@@ -32,11 +34,11 @@ class QCStatistic:
 
 class BeesPerFrame(QCStatistic):
 
+    name        = 'bees_per_frame'
+    description = 'Number of bees per frame'
 
     def __init__(self, bees):
         QCStatistic.__init__(self, bees)
-        self.name        = 'bees_per_frame'
-        self.description = 'Number of bees per frame'
 
     def compute(self):
         beeCounts = {}
@@ -56,10 +58,11 @@ class BeesPerFrame(QCStatistic):
 
 class FramesPerBee(QCStatistic):
 
+    name        = 'frames_per_bee'
+    description = 'Number of frames per bee'
+
     def __init__(self, bees):
         QCStatistic.__init__(self, bees)
-        self.name        = 'frames_per_bee'
-        self.description = 'Number of frames per bee'
 
     def compute(self):
         frameCounts = collections.defaultdict(list)
@@ -78,10 +81,11 @@ class FramesPerBee(QCStatistic):
 
 class FramesPerPath(QCStatistic):
 
+    name        = 'frames_per_path'
+    description = 'Number of frames per path'
+
     def __init__(self, bees):
         QCStatistic.__init__(self, bees)
-        self.name        = 'frames_per_path'
-        self.description = 'Number of frames per path'
 
     def compute(self):
         frameCounts = collections.defaultdict(list)
@@ -103,10 +107,11 @@ class FramesPerPath(QCStatistic):
 
 class FramesBetweenPaths(QCStatistic):
 
+    name        = 'frames_between_path'
+    description = 'Number of frames between paths'
+
     def __init__(self, bees):
         QCStatistic.__init__(self, bees)
-        self.name        = 'frames_between_path'
-        self.description = 'Number of frames between paths'
 
     def compute(self):
         frameCounts = collections.defaultdict(list)
@@ -126,10 +131,11 @@ class FramesBetweenPaths(QCStatistic):
 
 class PathsPerBee(QCStatistic):
 
+    name        = 'paths_per_bee'
+    description = 'Number of paths per bee'
+
     def __init__(self, bees):
         QCStatistic.__init__(self, bees)
-        self.name        = 'paths_per_bee'
-        self.description = 'Number of paths per bee'
 
     def compute(self):
         pathCounts = collections.defaultdict(list)
@@ -147,10 +153,11 @@ class PathsPerBee(QCStatistic):
 
 class Classification(QCStatistic):
 
+    name        = 'classification'
+    description = 'Tag classification'
+
     def __init__(self, bees):
         QCStatistic.__init__(self, bees)
-        self.name        = 'classification'
-        self.description = 'Tag classification'
 
     def compute(self):
         # Deal with arbitrary number of categories

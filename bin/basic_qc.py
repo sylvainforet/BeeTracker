@@ -86,11 +86,26 @@ def makePlots(args):
     basenames   = [os.path.basename(x) for x in args.input]
     basenames   = sorted(basenames, key=dirKey)
     directories = [os.path.join(args.outDir, x) for x in basenames]
-    plots       = bee_tracker.qc_plot.CountsPerCategoryPlots(bee_tracker.qc_stats.BeesPerFrame(None),
-                                                             directories,
-                                                             args.outDir,
-                                                             logScale=False)
-    plots.makePlots()
+    bee_tracker.qc_plot.CountsPerCategoryPlots(bee_tracker.qc_stats.BeesPerFrame,
+                                               directories,
+                                               args.outDir,
+                                               logScale=False).makePlots()
+    bee_tracker.qc_plot.CountsPerCategoryPlots(bee_tracker.qc_stats.FramesPerBee,
+                                               directories,
+                                               args.outDir,
+                                               logScale=True).makePlots()
+    bee_tracker.qc_plot.CountsPerCategoryPlots(bee_tracker.qc_stats.FramesPerPath,
+                                               directories,
+                                               args.outDir,
+                                               logScale=True).makePlots()
+    bee_tracker.qc_plot.CountsPerCategoryPlots(bee_tracker.qc_stats.FramesBetweenPaths,
+                                               directories,
+                                               args.outDir,
+                                               logScale=False).makePlots()
+    bee_tracker.qc_plot.CountsPerCategoryPlots(bee_tracker.qc_stats.PathsPerBee,
+                                               directories,
+                                               args.outDir,
+                                               logScale=False).makePlots()
 
 def main(args):
     if not args.noData:
