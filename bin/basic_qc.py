@@ -14,7 +14,7 @@ import bee_tracker.qc_plot
 import bee_tracker.qc_stats
 
 
-class Worker:
+class StatsWorker:
 
     def __init__(self, args):
         self.args = args
@@ -28,10 +28,8 @@ class Worker:
                   bee_tracker.qc_stats.Classification]
         name   = os.path.basename(path)
         outDir = os.path.join(args.outDir, name)
-        try:
+        if not os.path.exists(outDir):
             os.makedirs(outDir)
-        except FileExistsError:
-            sys.stderr.write('Output directory "%s" already exists\n' % outDir)
         bees  = bee_tracker.io_csv.loadBeesCSV(path)
         for bee in bees.values():
             bee.classify()
@@ -70,7 +68,7 @@ def parseArgs():
     return args
 
 def computeData(args):
-    worker = Worker(args)
+    worker = StatsWorker(args)
     if args.processes < 1:
         for path in args.input:
             worker.work(path)
