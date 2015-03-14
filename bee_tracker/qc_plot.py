@@ -124,48 +124,51 @@ class CountsPerCategoryPlots(QCPlots):
             if len(self.directories) > 20:
                 size = (len(self.directories) * 0.4, 4)
             matplotlib.pyplot.figure(figsize=size)
-            try:
-                ##### WARNING This is a hack because the violin plot does seem
-                ##### to work on the log scale when the scale is set with  yscale.
-                data = self.data[cat].data
-                if self.logScale:
-                    data = [numpy.log10(x) for x in self.data[cat].data]
-                matplotlib.pyplot.violinplot(data,
-                                             showmeans=False,
-                                             showextrema=False,
-                                             showmedians=True,
-                                             widths=0.9,
-                                             bw_method=0.20)
-                matplotlib.pyplot.xticks(list(range(1, len(self.data[cat].labels) + 1)),
-                                         self.data[cat].labels,
-                                         rotation='vertical')
-                if not self.logScale:
-                    matplotlib.pyplot.ylim(self.minVals[cat],
-                                           self.maxVals[cat])
-            except Exception as e:
-                sys.stderr.write('[Warning] Failed to plot violin plot for category %d: %s\n' % (cat, str(e)))
+            ##### WARNING This is a hack because the violin plot does seem
+            ##### to work on the log scale when the scale is set with  yscale.
+            data = self.data[cat].data
+            if len(data) < 2:
+                continue
+            if self.logScale:
+                data = [numpy.log10(x) for x in self.data[cat].data]
+            matplotlib.pyplot.violinplot(data,
+                                         showmeans=False,
+                                         showextrema=False,
+                                         showmedians=True,
+                                         widths=0.9,
+                                         bw_method=0.20)
+            matplotlib.pyplot.xticks(list(range(1, len(self.data[cat].labels) + 1)),
+                                     self.data[cat].labels,
+                                     rotation='vertical')
+            if not self.logScale:
+                matplotlib.pyplot.ylim(self.minVals[cat],
+                                       self.maxVals[cat])
             matplotlib.pyplot.savefig(out)
             matplotlib.pyplot.close()
 
     def makeBoxPlotsHTML(self, handle):
         '''Very basic HTML code around the box plots
         '''
-        handle.write('<br/>')
+        handle.write('<br/>\n')
         for cat in self.categories:
-            handle.write('<h2>Category: %d<h2/>\n' % cat)
+            handle.write('<h2>Category: %d</h2>\n' % cat)
             img = '%s.boxplot.%d.png' % (self.qcStatistic.name, cat)
             handle.write('<img src="%s"/>\n' % img)
-        handle.write('<br/>')
+        handle.write('<br/>\n')
 
     def makeViolinPlotsHTML(self, handle):
         '''Very basic HTML code around the violin plots
         '''
-        handle.write('<br/>')
+        handle.write('<br/>\n')
         for cat in self.categories:
-            handle.write('<h2>Category: %d<h2/>\n' % cat)
-            img = '%s.violinplot.%d.png' % (self.qcStatistic.name, cat)
-            handle.write('<img src="%s"/>\n' % img)
-        handle.write('<br/>')
+            handle.write('<h2>Category: %d</h2>\n' % cat)
+            img     = '%s.violinplot.%d.png' % (self.qcStatistic.name, cat)
+            relPath = os.path.join(self.outDir, img)
+            if os.path.exists(relPath):
+                handle.write('<img src="%s"/>\n' % img)
+            else:
+                handle.write('<p>Not enough data</p>\n')
+        handle.write('<br/>\n')
 
     def makeHistograms(self):
         '''Makes individual histograms for each category and each recording.
