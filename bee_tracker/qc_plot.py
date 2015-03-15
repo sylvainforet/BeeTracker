@@ -3,6 +3,7 @@
 import collections
 import math
 import os.path
+import sys
 
 import matplotlib.pyplot
 import numpy
@@ -156,20 +157,24 @@ class CountsPerCategoryPlots(QCPlots):
                 continue
             if self.logScale:
                 data = [numpy.log10(x) for x in self.data[cat].data]
-            matplotlib.pyplot.violinplot(data,
-                                         showmeans=False,
-                                         showextrema=False,
-                                         showmedians=True,
-                                         widths=0.9,
-                                         bw_method=0.20)
-            matplotlib.pyplot.xticks(list(range(1, len(self.data[cat].labels) + 1)),
-                                     self.data[cat].labels,
-                                     rotation='vertical')
-            if self.logScale:
-                matplotlib.pyplot.ylabel('$log_{10}$(counts)')
-            else:
-                matplotlib.pyplot.ylim(self.ranges[cat].min,
-                                       self.ranges[cat].max)
+            try:
+                matplotlib.pyplot.violinplot(data,
+                                             showmeans=False,
+                                             showextrema=False,
+                                             showmedians=True,
+                                             widths=0.9,
+                                             bw_method=0.20)
+                matplotlib.pyplot.xticks(list(range(1, len(self.data[cat].labels) + 1)),
+                                         self.data[cat].labels,
+                                         rotation='vertical')
+                if self.logScale:
+                    matplotlib.pyplot.ylabel('$log_{10}$(counts)')
+                else:
+                    matplotlib.pyplot.ylim(self.ranges[cat].min,
+                                           self.ranges[cat].max)
+            except Exception as e:
+                sys.stderr.write('[WARNING] failed to plot violin plot for %s (cat. %d): %s\n' %
+                                 (self.qcStatistic.name, cat, str(e)))
             matplotlib.pyplot.savefig(out)
             matplotlib.pyplot.close()
 
