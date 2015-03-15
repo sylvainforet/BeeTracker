@@ -9,6 +9,23 @@ import numpy
 import pandas
 
 
+class PlotRange:
+
+    def __init__(self, min, max):
+        self.min = min
+        self.max = max
+
+    def update(self, array):
+        self.min = min(self.min, array.min())
+        self.max = max(self.max, array.max())
+
+    def updateWithPercentile(self, array, minPercentile, maxPercentile):
+        self.min = min(self.min, numpy.percentile(array, minPercentile))
+        self.max = max(self.max, numpy.percentile(array, maxPercentile))
+
+    def asTuple(self):
+        return (self.min, self.max)
+
 class QCPlots:
     '''The parent class for all the classes that plot QC statistics
     '''
@@ -43,11 +60,15 @@ class QCPlots:
         handle.write(footer)
 
 class IndexHTML(QCPlots):
+    '''Simple class to generate an index with links to the the other QC files
+    '''
 
     def __init__(self, qcStatistic, directories, outDir):
         QCPlots.__init__(self, qcStatistic, directories, outDir)
 
     def addPlotsLink(self, qcPlots, handle):
+        '''Adds a link to an html page with a set of plots
+        '''
         href = qcPlots.htmlPath
         txt  = qcPlots.qcStatistic.description
         handle.write('<a href="%s">%s</a>\n' % (href, txt))
@@ -73,27 +94,23 @@ class CountsPerCategoryPlots(QCPlots):
         and lists all the categories.
         '''
         # Load data and compute ranges
-        self.maxVals = collections.defaultdict(int)
-        self.minVals = collections.defaultdict(int)
-        self.data    = collections.defaultdict(CountDataWithLabels)
-        categories   = {}
+        self.ranges = {}
+        self.data   = collections.defaultdict(CountDataWithLabels)
+        categories  = {}
         for directory in self.directories:
             path   = os.path.join(directory, self.qcStatistic.getOutputFileName())
             df     = pandas.read_csv(path)
             folder = os.path.basename(directory)
             label  = folder.replace('.csv', '')
             for cat, catDf in df.groupby('category'):
-                data                  = catDf.counts.values
+                data            = catDf.counts.values
                 self.data[cat].data.append(data)
                 self.data[cat].labels.append(label)
                 self.data[cat].dirs.append(folder)
-                maxVal                = numpy.percentile(data, 99)
-                maxVal                = max(maxVal, self.maxVals[cat])
-                self.maxVals[cat]     = maxVal
-                minVal                = numpy.percentile(data, 1)
-                minVal                = min(minVal, self.minVals[cat])
-                self.minVals[cat]     = minVal
-                categories[cat]       = 1
+                if not cat in self.ranges:
+                    self.ranges[cat] = PlotRange(numpy.Inf, 0)
+                self.ranges[cat].updateWithPercentile(data, 1, 99)
+                categories[cat] = 1
         # Categories
         self.categories = list(categories.keys())
         self.categories.sort()
@@ -148,9 +165,11 @@ class CountsPerCategoryPlots(QCPlots):
             matplotlib.pyplot.xticks(list(range(1, len(self.data[cat].labels) + 1)),
                                      self.data[cat].labels,
                                      rotation='vertical')
-            if not self.logScale:
-                matplotlib.pyplot.ylim(self.minVals[cat],
-                                       self.maxVals[cat])
+            if self.logScale:
+                matplotlib.pyplot.ylabel('$log_{10}$(counts)')
+            else:
+                matplotlib.pyplot.ylim(self.ranges[cat].min,
+                                       self.ranges[cat].max)
             matplotlib.pyplot.savefig(out)
             matplotlib.pyplot.close()
 
@@ -182,15 +201,13 @@ class CountsPerCategoryPlots(QCPlots):
         '''Makes individual histograms for each category and each recording.
         '''
         for cat in self.categories:
-            minx = self.minVals[cat]
-            maxx = self.maxVals[cat]
             for i in range(len(self.data[cat].data)):
                 data   = self.data[cat].data[i]
                 folder = self.data[cat].dirs[i]
                 matplotlib.pyplot.figure()
                 matplotlib.pyplot.hist(data,
                                        bins=20,
-                                       range=(minx, maxx),
+                                       range=self.ranges[cat].asTuple(),
                                        log=self.logScale)
                 img = '%s.hists.%d.png' % (self.qcStatistic.name, cat)
                 out = os.path.join(self.outDir, folder, img)
