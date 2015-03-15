@@ -70,7 +70,7 @@ class IndexHTML(QCPlots):
     def addPlotsLink(self, qcPlots, handle):
         '''Adds a link to an html page with a set of plots
         '''
-        href = qcPlots.htmlPath
+        href = os.path.basename(qcPlots.htmlPath)
         txt  = qcPlots.qcStatistic.description
         handle.write('<a href="%s">%s</a>\n' % (href, txt))
         handle.write('<br/>\n')
