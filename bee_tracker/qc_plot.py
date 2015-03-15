@@ -3,13 +3,10 @@
 import collections
 import math
 import os.path
-import sys
 
 import matplotlib.pyplot
 import numpy
 import pandas
-
-import bee_tracker.qc_stats
 
 
 class QCPlots:
@@ -45,7 +42,7 @@ class QCPlots:
         </html>\n'''
         handle.write(footer)
 
-class DataWithLabels:
+class CountDataWithLabels:
 
     def __init__(self):
         self.data   = []
@@ -67,7 +64,7 @@ class CountsPerCategoryPlots(QCPlots):
         # Load data and compute ranges
         self.maxVals = collections.defaultdict(int)
         self.minVals = collections.defaultdict(int)
-        self.data    = collections.defaultdict(DataWithLabels)
+        self.data    = collections.defaultdict(CountDataWithLabels)
         categories   = {}
         for directory in self.directories:
             path   = os.path.join(directory, self.qcStatistic.getOutputFileName())
@@ -162,9 +159,9 @@ class CountsPerCategoryPlots(QCPlots):
         handle.write('<br/>\n')
         for cat in self.categories:
             handle.write('<h2>Category: %d</h2>\n' % cat)
-            img     = '%s.violinplot.%d.png' % (self.qcStatistic.name, cat)
-            relPath = os.path.join(self.outDir, img)
-            if os.path.exists(relPath):
+            img  = '%s.violinplot.%d.png' % (self.qcStatistic.name, cat)
+            path = os.path.join(self.outDir, img)
+            if os.path.exists(path):
                 handle.write('<img src="%s"/>\n' % img)
             else:
                 handle.write('<p>Not enough data</p>\n')
@@ -215,8 +212,8 @@ class CountsPerCategoryPlots(QCPlots):
                 img  = '%s.hists.%d.png' % (self.qcStatistic.name, cat)
                 path = os.path.join(subDir, img)
                 if os.path.exists(path):
-                    relPath = os.path.join(baseDir, img)
-                    handle.write('    <td><img src="%s" class="tableImg"/></td>\n' % relPath)
+                    src = os.path.join(baseDir, img)
+                    handle.write('    <td><img src="%s" class="tableImg"/></td>\n' % src)
                 else:
                     handle.write('    <td>no data</td>\n')
             handle.write('  </tr>\n')
@@ -225,11 +222,11 @@ class CountsPerCategoryPlots(QCPlots):
     def makePlots(self):
         '''Makes all the plots and the associated HTML
         '''
+        self.prepare()
         # Create the output directory if it does not exist
         if not os.path.exists(self.outDir):
             os.makedirs(outDir)
         with open(self.htmlPath, "w") as handle:
-            self.prepare()
             self.writeHTMLHeader(handle)
             self.makeBoxPlots()
             self.makeBoxPlotsHTML(handle)
@@ -237,4 +234,156 @@ class CountsPerCategoryPlots(QCPlots):
             self.makeViolinPlotsHTML(handle)
             self.makeHistograms()
             self.makeHistogramsHTML(handle)
+            self.writeHTMLFooter(handle)
+
+class ClassificationData:
+
+    def __init__(self,
+                 directory,
+                 total,
+                 totalKnown,
+                 totalKnownProp,
+                 maxKnownProp,
+                 knownCat):
+        self.directory      = directory
+        self.total          = total
+        self.totalKnown     = totalKnown
+        self.totalKnownProp = totalKnownProp
+        self.maxKnownProp   = maxKnownProp
+        self.knownCat       = knownCat
+
+class ClassificationPlots(QCPlots):
+
+    def __init__(self, qcStatistic, directories, outDir, minCount=0):
+        QCPlots.__init__(self, qcStatistic, directories, outDir)
+        self.minCount = minCount
+
+    def prepare(self):
+        '''Compute the ranges of plots for each category accross all recordings
+        and lists all the categories.
+        '''
+        # Load data and compute ranges
+        categories               = {}
+        self.data                = []
+        for directory in self.directories:
+            path   = os.path.join(directory, self.qcStatistic.getOutputFileName())
+            df     = pandas.read_csv(path)
+            cats   = list(df)
+            ### WARNING: strong assumption that column 0 contains the unknown tags
+            for cat in cats:
+                categories[cat] = 1
+            matrix          = df.as_matrix()
+            total           = matrix.sum(axis=1)
+            if self.minCount > 0:
+                matrix = matrix[total > self.minCount]
+                total  = matrix.sum(axis=1)
+            knownMatrix     = matrix[:,1:]
+            knownCat        = knownMatrix.argmax(axis=1)
+            maxKnown        = knownMatrix[range(len(matrix)), knownCat]
+            totalKnown      = knownMatrix.sum(axis=1)
+            maxKnownProp    = maxKnown / totalKnown
+            totalKnownProp  = totalKnown / total
+            data            = ClassificationData(os.path.basename(directory),
+                                                 total,
+                                                 totalKnown,
+                                                 totalKnownProp,
+                                                 maxKnownProp,
+                                                 knownCat + 1)
+            self.data.append(data)
+        self.categories  = [int(x) for x in categories.keys()]
+        self.categories.sort()
+
+    def plotTotalKnownProp(self):
+        for data in self.data:
+            matplotlib.pyplot.figure()
+            matplotlib.pyplot.hexbin(data.total,
+                                     data.totalKnownProp,
+                                     xscale='log',
+                                     marginals=False,
+                                     gridsize=20,
+                                     bins='log')
+            cb = matplotlib.pyplot.colorbar()
+            cb.set_label('lo10(counts)')
+            img = '%s.totalKnownProp.png' % (self.qcStatistic.name)
+            out = os.path.join(self.outDir,
+                               data.directory,
+                               img)
+            matplotlib.pyplot.savefig(out)
+            matplotlib.pyplot.close()
+
+    def plotMaxKnownProp(self):
+
+        def plotHexBin(x, y, directory, img):
+            matplotlib.pyplot.figure()
+            matplotlib.pyplot.hexbin(x,
+                                     y,
+                                     xscale='log',
+                                     marginals=False,
+                                     gridsize=20,
+                                     bins='log')
+            cb  = matplotlib.pyplot.colorbar()
+            cb.set_label('lo10(counts)')
+            out = os.path.join(self.outDir,
+                               directory,
+                               img)
+            matplotlib.pyplot.savefig(out)
+            matplotlib.pyplot.close()
+
+        for data in self.data:
+            img = '%s.maxKnownProp.png' % (self.qcStatistic.name)
+            plotHexBin(data.totalKnown,
+                       data.maxKnownProp,
+                       data.directory,
+                       img)
+            for cat in self.categories[1:]:
+                img   = '%s.maxKnownProp.%d.png' % (self.qcStatistic.name, cat)
+                where = (data.knownCat == cat) & (data.totalKnown > 0)
+                totalKnownCat = data.totalKnown[where]
+                if len(totalKnownCat) > 0:
+                    plotHexBin(totalKnownCat,
+                               data.maxKnownProp[where],
+                               data.directory,
+                               img)
+
+    def writePropTableHTML(self, handle):
+        handle.write('<table>\n')
+        handle.write('  <tr>\n')
+        handle.write('    <th>Source</th>\n')
+        handle.write('    <th>% Kown categories</th>\n')
+        handle.write('    <th>Max cat. % (all cat.)</th>\n')
+        for cat in self.categories[1:]:
+            handle.write('    <th>Max cat. %% (cat. %d)</th>\n' % cat)
+        handle.write('  <tr>\n')
+        for data in self.data:
+            handle.write('  <tr>\n')
+            handle.write('    <td>%s</td>\n' % data.directory)
+            img = '%s.totalKnownProp.png' % (self.qcStatistic.name)
+            src = os.path.join(data.directory, img)
+            handle.write('    <td><img src="%s" class="tableImg"/></td>\n' % src)
+            img = '%s.maxKnownProp.png' % (self.qcStatistic.name)
+            src = os.path.join(data.directory, img)
+            handle.write('    <td><img src="%s" class="tableImg"/></td>\n' % src)
+            for cat in self.categories[1:]:
+                img  = '%s.maxKnownProp.%d.png' % (self.qcStatistic.name, cat)
+                path = os.path.join(self.outDir, data.directory, img)
+                if os.path.exists(path):
+                    src = os.path.join(data.directory, img)
+                    handle.write('    <td><img src="%s" class="tableImg"/></td>\n' % src)
+                else:
+                    handle.write('    <td>No data</td>\n')
+            handle.write('  </tr>\n')
+        handle.write('</table>\n')
+
+    def makePlots(self):
+        '''Makes all the plots and the associated HTML
+        '''
+        self.prepare()
+        # Create the output directory if it does not exist
+        if not os.path.exists(self.outDir):
+            os.makedirs(outDir)
+        with open(self.htmlPath, "w") as handle:
+            self.writeHTMLHeader(handle)
+            self.plotTotalKnownProp()
+            self.plotMaxKnownProp()
+            self.writePropTableHTML(handle)
             self.writeHTMLFooter(handle)

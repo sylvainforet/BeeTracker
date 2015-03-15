@@ -104,6 +104,10 @@ def makePlots(args):
                                                directories,
                                                args.outDir,
                                                logScale=False).makePlots()
+    bee_tracker.qc_plot.ClassificationPlots(bee_tracker.qc_stats.Classification,
+                                            directories,
+                                            args.outDir,
+                                            minCount=10).makePlots()
 
 def main(args):
     if not args.noData:

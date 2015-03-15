@@ -7,7 +7,8 @@ class Bee:
     '''A bee with a unique id, a set of tags, frames, and (x, y) coordinates
     '''
 
-    UNKNOWN_TAG = 0
+    UNKNOWN_TAG     = 0
+    UNKNOWN_TAG_STR = str(UNKNOWN_TAG)
 
     def __init__(self, beeId):
         '''Initialises a empty bee object with a unique id
