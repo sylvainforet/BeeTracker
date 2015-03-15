@@ -107,7 +107,7 @@ class FramesPerPath(QCStatistic):
 
 class FramesBetweenPaths(QCStatistic):
 
-    name        = 'frames_between_path'
+    name        = 'frames_between_paths'
     description = 'Number of frames between paths'
 
     def __init__(self, bees):
