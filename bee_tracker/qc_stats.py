@@ -13,7 +13,7 @@ class QCStatistic:
     '''
 
     name        = 'qc_statistic'
-    description = 'QC'
+    description = 'Bee Tracking QC'
     extension   = '.txt'
 
     def __init__(self, bees):

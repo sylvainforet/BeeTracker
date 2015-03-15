@@ -84,30 +84,49 @@ def makePlots(args):
     basenames   = [os.path.basename(x) for x in args.input]
     basenames   = sorted(basenames, key=dirKey)
     directories = [os.path.join(args.outDir, x) for x in basenames]
-    bee_tracker.qc_plot.CountsPerCategoryPlots(bee_tracker.qc_stats.BeesPerFrame,
-                                               directories,
-                                               args.outDir,
-                                               logScale=False).makePlots()
-    bee_tracker.qc_plot.CountsPerCategoryPlots(bee_tracker.qc_stats.FramesPerBee,
-                                               directories,
-                                               args.outDir,
-                                               logScale=True).makePlots()
-    bee_tracker.qc_plot.CountsPerCategoryPlots(bee_tracker.qc_stats.FramesPerPath,
-                                               directories,
-                                               args.outDir,
-                                               logScale=True).makePlots()
-    bee_tracker.qc_plot.CountsPerCategoryPlots(bee_tracker.qc_stats.FramesBetweenPaths,
-                                               directories,
-                                               args.outDir,
-                                               logScale=False).makePlots()
-    bee_tracker.qc_plot.CountsPerCategoryPlots(bee_tracker.qc_stats.PathsPerBee,
-                                               directories,
-                                               args.outDir,
-                                               logScale=False).makePlots()
-    bee_tracker.qc_plot.ClassificationPlots(bee_tracker.qc_stats.Classification,
-                                            directories,
-                                            args.outDir,
-                                            minCount=10).makePlots()
+    index       = bee_tracker.qc_plot.IndexHTML(bee_tracker.qc_stats.QCStatistic,
+                                                directories,
+                                                args.outDir)
+    path        = os.path.join(args.outDir, 'index.html')
+    with open(path, "w") as handle:
+        index.writeHTMLHeader(handle)
+        p = bee_tracker.qc_plot.CountsPerCategoryPlots(bee_tracker.qc_stats.BeesPerFrame,
+                                                       directories,
+                                                       args.outDir,
+                                                       logScale=False)
+        p.makePlots()
+        index.addPlotsLink(p, handle)
+        p = bee_tracker.qc_plot.CountsPerCategoryPlots(bee_tracker.qc_stats.FramesPerBee,
+                                                       directories,
+                                                       args.outDir,
+                                                       logScale=True)
+        p.makePlots()
+        index.addPlotsLink(p, handle)
+        p = bee_tracker.qc_plot.CountsPerCategoryPlots(bee_tracker.qc_stats.FramesPerPath,
+                                                       directories,
+                                                       args.outDir,
+                                                       logScale=True)
+        p.makePlots()
+        index.addPlotsLink(p, handle)
+        p = bee_tracker.qc_plot.CountsPerCategoryPlots(bee_tracker.qc_stats.FramesBetweenPaths,
+                                                       directories,
+                                                       args.outDir,
+                                                       logScale=False)
+        p.makePlots()
+        index.addPlotsLink(p, handle)
+        p = bee_tracker.qc_plot.CountsPerCategoryPlots(bee_tracker.qc_stats.PathsPerBee,
+                                                       directories,
+                                                       args.outDir,
+                                                       logScale=False)
+        p.makePlots()
+        index.addPlotsLink(p, handle)
+        p = bee_tracker.qc_plot.ClassificationPlots(bee_tracker.qc_stats.Classification,
+                                                    directories,
+                                                    args.outDir,
+                                                    minCount=10)
+        p.makePlots()
+        index.addPlotsLink(p, handle)
+        index.writeHTMLFooter(handle)
 
 def main(args):
     if not args.noData:

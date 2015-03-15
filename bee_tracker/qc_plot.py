@@ -42,6 +42,17 @@ class QCPlots:
         </html>\n'''
         handle.write(footer)
 
+class IndexHTML(QCPlots):
+
+    def __init__(self, qcStatistic, directories, outDir):
+        QCPlots.__init__(self, qcStatistic, directories, outDir)
+
+    def addPlotsLink(self, qcPlots, handle):
+        href = qcPlots.htmlPath
+        txt  = qcPlots.qcStatistic.description
+        handle.write('<a href="%s">%s</a>\n' % (href, txt))
+        handle.write('<br/>\n')
+
 class CountDataWithLabels:
 
     def __init__(self):
